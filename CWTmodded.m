@@ -33,7 +33,7 @@ function [out] = CWTmodded(mySignal)
 % will deliver detail across several orders of magnitude.
 
 out.signal = mySignal;
-% 1. The wavelet transform can be computed using a FFT algorithm. In order to leverage the advantages of the FFT (speed), expand the number of data points to the nearest power of two of 150% of the original signal length. The 150% is needed for effective windowing.
+% 1. The wavelet transform can be computed using a FFT algorithm. In order to leverage the advantages of the FFT (e.g. speed), expand the number of data points to the nearest power of two of 150% of the original signal length. The 150% is needed for effective windowing.
 numTime = length(mySignal);
 fftLen= 2^(ceil(log(numTime*2)/log(2)));
 timeDiff = fftLen - numTime;
@@ -133,5 +133,15 @@ for i = 1:numScales %This for loop normalizes the wavelet coefficients by the sc
 end
 out.cwt(3).cfs = cwtftOutputTemp2(:,originalSignalIndLeft:(originalSignalIndLeft+numTime-1));
 
-out = ridgefinder(out);
-out = CWTFeatureGen(out);
+% 5a. Calculate the ridges for the "positive signal" 
+out.ridgepks = ridgefinder(out);
+
+% 5b. Calculate the ridges for the "negative signal"
+outNeg = out;
+for i=1:length(out.cwt)
+    outNeg.cwt(i).cfs = -1*out.cwt(i).cfs;
+end
+out.ridgeval = ridgefinder(outNeg);
+
+out.features = CWTFeatureGen(out);
+disp('here')
