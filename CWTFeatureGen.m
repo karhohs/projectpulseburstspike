@@ -13,12 +13,12 @@ function [out] = CWTFeatureGen(myCWT)
 %
 % Other Notes:
 %
-out = myCWT;
+out(length(myCWT.cwt)).low = [];
 for i=1:length(myCWT.cwt)
-    low = 1:round(length(myCWT.scales)/3);
-    med = (low(end)+1):round(length(myCWT.scales)*2/3);
-    high = (med(end)+1):length(myCWT.scales);
-    peakinfo = [myCWT.cwt(i).ridgepeaks.scaleindex, myCWT.cwt(i).ridgepeaks.time, myCWT.cwt(i).ridgepeaks.cfs];
+    lowrng = 1:round(length(myCWT.scales)/3);
+    medrng = (lowrng(end)+1):round(length(myCWT.scales)*2/3);
+    highrng = (medrng(end)+1):length(myCWT.scales);
+    peakinfo = [myCWT.ridgepks(i).ridgepeaks.scaleindex, myCWT.ridgepks(i).ridgepeaks.time, myCWT.ridgepks(i).ridgepeaks.cfs];
     if isempty(peakinfo) %no peaks were found...
         low.num = 0;
         med.num = 0;
@@ -26,27 +26,27 @@ for i=1:length(myCWT.cwt)
         low.meancfs = 0;
         med.meancfs = 0;
         high.meancfs = 0;
-        out.cwt(i).features.low = low;
-        out.cwt(i).features.med = med;
-        out.cwt(i).features.high = high;
+        out(i).low = low;
+        out(i).med = med;
+        out(i).high = high;
         continue;
     end
     peakinfo = sortrows(peakinfo,1);
-    lowindtemp = find(peakinfo(:,1)<=low(end),1,'last');
-    medindtemp = find((peakinfo(:,1)>low(end))&(peakinfo(:,1)<=med(end)),1,'last');
-    lowind = zeros(size(myCWT.cwt(i).ridgepeaks.scaleindex));
+    lowindtemp = find(peakinfo(:,1)<=lowrng(end),1,'last');
+    medindtemp = find((peakinfo(:,1)>lowrng(end))&(peakinfo(:,1)<=medrng(end)),1,'last');
+    lowind = zeros(size(myCWT.ridgepks(i).ridgepeaks.scaleindex));
     if ~isempty(lowindtemp)
         lowind(1:lowindtemp) = 1;
     else
         lowindtemp = 0;
     end
-    medind = zeros(size(myCWT.cwt(i).ridgepeaks.scaleindex));
+    medind = zeros(size(myCWT.ridgepks(i).ridgepeaks.scaleindex));
     if ~isempty(medindtemp)
         medind((lowindtemp+1):medindtemp) = 1;
     else
         medindtemp = lowindtemp;
     end
-    highind = zeros(size(myCWT.cwt(i).ridgepeaks.scaleindex));
+    highind = zeros(size(myCWT.ridgepks(i).ridgepeaks.scaleindex));
     if (medindtemp+1)<=length(highind)
         highind((medindtemp+1):end) = 1;
     end
@@ -75,11 +75,21 @@ for i=1:length(myCWT.cwt)
     else
         high.meancfs = 0;
     end
-    out.cwt(i).features.low = low;
-    out.cwt(i).features.med = med;
-    out.cwt(i).features.high = high;
+    out(i).low = low;
+    out(i).med = med;
+    out(i).high = high;
 end
-
-out.vector = [out.cwt(1).features.low.num, out.cwt(1).features.low.meancfs, out.cwt(1).features.med.num, out.cwt(1).features.med.meancfs, out.cwt(1).features.high.num, out.cwt(1).features.high.meancfs, ...
-    out.cwt(2).features.low.num, out.cwt(2).features.low.meancfs, out.cwt(2).features.med.num, out.cwt(2).features.med.meancfs, out.cwt(2).features.high.num, out.cwt(2).features.high.meancfs, ...
-    out.cwt(3).features.low.num, out.cwt(3).features.low.meancfs, out.cwt(3).features.med.num, out.cwt(3).features.med.meancfs, out.cwt(3).features.high.num, out.cwt(3).features.high.meancfs];
+for i=1:length(myCWT.cwt)
+    for j=1:length(myCWT.scales)
+        ind = myCWT.ridgepks(i).ridgepeaks.scaleindex==myCWT.scales(j);
+        if sum(ind)==0
+            out(i).scalesmean(j) = 0;
+        else
+            out(i).scalesmean(j) = mean(myCWT.ridgepks(i).ridgepeaks.cfs(ind));
+        end
+        out(i).scalesnum(j) = sum(ind);
+    end
+end
+%out.vector = [out.cwt(1).features.low.num, out.cwt(1).features.low.meancfs, out.cwt(1).features.med.num, out.cwt(1).features.med.meancfs, out.cwt(1).features.high.num, out.cwt(1).features.high.meancfs, ...
+    %out.cwt(2).features.low.num, out.cwt(2).features.low.meancfs, out.cwt(2).features.med.num, out.cwt(2).features.med.meancfs, out.cwt(2).features.high.num, out.cwt(2).features.high.meancfs, ...
+    %out.cwt(3).features.low.num, out.cwt(3).features.low.meancfs, out.cwt(3).features.med.num, out.cwt(3).features.med.meancfs, out.cwt(3).features.high.num, out.cwt(3).features.high.meancfs];
