@@ -24,21 +24,21 @@ function [out] = ridgefinder(myCWT)
 % Other Notes:
 %
 % 1. Find the peaks within each scale
-out = myCWT;
 % determine a threshold that is 3 orders of magnitude less than the range of
 % the signal. 1000 is about 4096 which is the range of a 12-bit camera.
-thresh = (max(out.signal) - min(out.signal))/1000;
+thresh = (max(myCWT.signal) - min(myCWT.signal))/1000;
 numScales = length(myCWT.scales);
 numWavelets = length(myCWT.cwt);
+out(numWavelets).ridgemap = []; %initialize the struct
 numTime = size(myCWT.cwt(1).cfs,2);
 wavelet_peaks = cell(1,numWavelets);
 for j = 1:numWavelets
     wavelet_peaks{j} = cell(1,numScales);
     for k = 1:numScales
-        if mod(out.scales(k),2)
-            windowsize = out.scales(k);
+        if mod(myCWT.scales(k),2)
+            windowsize = myCWT.scales(k);
         else
-            windowsize = out.scales(k)+1;
+            windowsize = myCWT.scales(k)+1;
         end
         wavelet_peaks{j}{k} = first_pass_peak_detection(myCWT.cwt(j).cfs(k,:), windowsize, thresh);
     end
@@ -109,9 +109,9 @@ for z = 1:numWavelets
             end
         end
     end
-    out.cwt(z).ridgemap = ridge_map;
-    out.cwt(z).ridge = ridgemap2ridge(ridge_map);
-    out.cwt(z).ridgepeaks = ridgepeaks(out.cwt(z));
+    out(z).ridgemap = ridge_map;
+    out(z).ridge = ridgemap2ridge(ridge_map);
+    out(z).ridgepeaks = ridgepeaks(myCWT.cwt(z),out(z));
 end
 
 function [out]=first_pass_peak_detection(x,winw_size,s)
@@ -189,22 +189,22 @@ for i = 1:numRidge
     ridge{i} = sub2ind(siz,B(:,1),B(:,2));
 end
 
-function [peaks] = ridgepeaks(cwt)
+function [peaks] = ridgepeaks(cwt,out)
 peaks.scaleindex = [];
 peaks.time = [];
 peaks.cfs = [];
 peaks.ridgeID = [];
-numRidge = length(cwt.ridge);
+numRidge = length(out.ridge);
 siz = size(cwt.cfs);
 for i=1:numRidge
-    ridgecfs = cwt.cfs(cwt.ridge{i});
+    ridgecfs = cwt.cfs(out.ridge{i});
     peak_index = watershed(ridgecfs); %easy way to find peaks
     peak_index = find(~peak_index);
     if isempty(peak_index)
         [~,peak_index] = max(ridgecfs);
     end
-    [scaleindex,time] = ind2sub(siz,cwt.ridge{i}(peak_index));
-    cfs = cwt.cfs(cwt.ridge{i}(peak_index));
+    [scaleindex,time] = ind2sub(siz,out.ridge{i}(peak_index));
+    cfs = cwt.cfs(out.ridge{i}(peak_index));
     peaks.scaleindex = [peaks.scaleindex; scaleindex];
     peaks.time = [peaks.time; time];
     peaks.cfs = [peaks.cfs; cfs];
