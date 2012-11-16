@@ -133,6 +133,27 @@ for i = 1:numScales %This for loop normalizes the wavelet coefficients by the sc
 end
 out.cwt(3).cfs = cwtftOutputTemp2(:,originalSignalIndLeft:(originalSignalIndLeft+numTime-1));
 
+% 4d. Calculate the paul wavelet transform
+out.cwt(4).type = 'paul';
+cwtftOutputTemp = cwtft(signalWin,'scales',wavelet_scales{1},'wavelet','paul');
+cwtftOutputTemp2 = zeros(numScales,fftLen);
+cwtftOutputTemp2(1:10,:) = cwtftOutputTemp.cfs;
+if (pow102>2)
+    for i=2:(pow102-1)
+        cwtftOutputTemp = cwtft(signalWin,'scales',wavelet_scales{i},'wavelet','paul');
+        cwtftOutputTemp = cwtftOutputTemp.cfs;
+        cwtftOutputTemp2((pow102-1)*10+1:(pow102-1)*10+10,:) = cwtftOutputTemp;
+    end
+end
+cwtftOutputTemp = cwtft(signalWin,'scales',wavelet_scales{pow102},'wavelet','paul');
+cwtftOutputTemp = cwtftOutputTemp.cfs;
+cwtftOutputTemp2((end-length(wavelet_scales{pow102})+1):end,:) = cwtftOutputTemp;
+cwtftOutputTemp2 = real(cwtftOutputTemp2);
+for i = 1:numScales %This for loop normalizes the wavelet coefficients by the scale.
+    cwtftOutputTemp2(i,:) = cwtftOutputTemp2(i,:)/sqrt(out.scales(i));
+end
+out.cwt(4).cfs = cwtftOutputTemp2(:,originalSignalIndLeft:(originalSignalIndLeft+numTime-1));
+
 % 5a. Calculate the ridges for the "positive signal" 
 out.ridgepks = ridgefinder(out);
 
